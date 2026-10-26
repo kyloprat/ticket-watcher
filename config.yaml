@@ -1,0 +1,81 @@
+# ─────────────────────────────────────────────────────────────
+# Ticket Watcher – site & behaviour config
+# What to watch lives in trackers.json (edit it or use Telegram commands).
+# This file describes HOW each site is checked. Adding a new site = adding
+# a block under `providers:` – no code changes needed.
+# ─────────────────────────────────────────────────────────────
+
+settings:
+  timezone: Asia/Kolkata
+  # Warn on Telegram after this many consecutive failed checks of one site
+  # (e.g. the site started blocking the bot). Sent once, until it recovers.
+  error_alert_after: 6
+  # Daily "still watching" summary at this local hour (0-23). null = off.
+  heartbeat_hour: 10
+  # Real headless browser (Playwright) is far more reliable on JS-heavy
+  # ticketing sites. auto = use it if installed, else plain HTTP.
+  use_browser: auto        # auto | always | never
+  page_wait_seconds: 4     # extra time for JS to render each page
+
+# Common names → the slug ticket sites use in URLs.
+city_aliases:
+  bangalore: bengaluru
+  blr: bengaluru
+  bombay: mumbai
+  madras: chennai
+  calcutta: kolkata
+  gurgaon: gurugram
+  trivandrum: thiruvananthapuram
+  cochin: kochi
+  vizag: visakhapatnam
+
+# Text that means "you've been blocked", not "page loaded".
+block_markers:
+  - "access denied"
+  - "verify you are human"
+  - "are you a robot"
+  - "attention required"
+  - "request blocked"
+  - "unusual traffic"
+
+providers:
+  bookmyshow:
+    name: BookMyShow
+    enabled: true
+    # {city} is replaced by the city slug. Every listing page is scanned for
+    # a link matching the movie name; that movie page is then checked.
+    listing_urls:
+      - "https://in.bookmyshow.com/explore/movies-{city}"
+      - "https://in.bookmyshow.com/explore/upcoming-movies-{city}"
+    link_must_contain: ["/movies/"]
+    city_slugs:            # site-specific overrides
+      delhi: national-capital-region-ncr
+      ncr: national-capital-region-ncr
+      noida: national-capital-region-ncr
+    # Button/link texts on the movie page
+    open_phrases: ["book tickets", "book now"]
+    closed_phrases: ["i'm interested", "im interested", "coming soon", "releasing on"]
+
+  district:
+    name: District
+    enabled: true
+    listing_urls:
+      - "https://www.district.in/movies/"
+      - "https://www.district.in/movies/upcoming"
+    link_must_contain: ["/movies/"]
+    city_slugs: {}
+    open_phrases: ["book tickets", "book now", "select seats"]
+    closed_phrases: ["coming soon", "notify me", "releasing on", "i'm interested"]
+
+  pvr:
+    name: PVR INOX
+    # Off by default: PVR's URL layout changes often. Open pvrcinemas.com in a
+    # browser, pick your city, copy the "Now Showing" URL here (use {city}),
+    # then set enabled: true.
+    enabled: false
+    listing_urls:
+      - "https://www.pvrcinemas.com/{city}/now-showing"
+    link_must_contain: []
+    city_slugs: {}
+    open_phrases: ["book tickets", "book now", "buy tickets"]
+    closed_phrases: ["coming soon", "notify me"]

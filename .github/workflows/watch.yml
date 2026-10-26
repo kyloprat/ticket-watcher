@@ -1,0 +1,48 @@
+name: ticket-watch
+
+on:
+  schedule:
+    # Every 15 minutes (UTC). GitHub may delay scheduled runs by a few minutes.
+    # Private repo? Free minutes are limited – use "*/30 * * * *" or slower.
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}      # "Run workflow" button for a manual check
+
+permissions:
+  contents: write            # to save state.json / trackers.json back
+
+concurrency:
+  group: ticket-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Check
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m watcher run
+
+      - name: Save state
+        if: always()
+        run: |
+          git config user.name  "ticket-watcher-bot"
+          git config user.email "ticket-watcher-bot@users.noreply.github.com"
+          git add state.json trackers.json
+          git diff --cached --quiet || git commit -m "watcher state $(date -u +%FT%TZ) [skip ci]"
+          git pull --rebase --autostash || true
+          git push || true

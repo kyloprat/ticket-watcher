@@ -1,0 +1,12 @@
+[
+  {
+    "id": "avengers-doomsday-bengaluru",
+    "type": "movie",
+    "movie": "Avengers: Doomsday",
+    "city": "Bangalore",
+    "providers": ["bookmyshow", "district"],
+    "urls": {},
+    "stop_after_found": true,
+    "enabled": true
+  }
+]
