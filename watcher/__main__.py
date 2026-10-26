@@ -53,6 +53,9 @@ def main(argv=None) -> int:
     sub.add_parser("test-telegram")
 
     a = ap.parse_args(argv)
+    for stream in (sys.stdout, sys.stderr):   # Windows consoles default to cp1252 and crash on emoji
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     logging.basicConfig(level=logging.DEBUG if a.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(message)s")
     base = Path(a.dir)

@@ -33,6 +33,17 @@ def href_slug_text(href: str) -> str:
     return normalize(path.replace("-", " ").replace("/", " "))
 
 
+def matches_pattern(haystacks: list[str], patterns: list[str]) -> str | None:
+    """Return the first text matched by any regex (case-insensitive) in any haystack."""
+    for p in patterns:
+        rx = re.compile(p, re.I)
+        for h in haystacks:
+            m = rx.search(h or "")
+            if m:
+                return m.group(0)
+    return None
+
+
 def contains_phrase(haystacks: list[str], phrases: list[str]) -> str | None:
     """Return the first phrase found (normalised, word-boundary) in any haystack."""
     norm_h = [" " + normalize(h) + " " for h in haystacks]

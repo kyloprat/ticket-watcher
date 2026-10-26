@@ -4,8 +4,14 @@
     "type": "movie",
     "movie": "Avengers: Doomsday",
     "city": "Bangalore",
-    "providers": ["bookmyshow", "district"],
-    "urls": {},
+    "providers": [
+      "bookmyshow",
+      "district"
+    ],
+    "urls": {
+      "bookmyshow": "https://in.bookmyshow.com/movies/bengaluru/avengers-doomsday/ET00439706",
+      "district": "https://www.district.in/movies/avengers-doomsday-movie-tickets-in-bengaluru-MV176735"
+    },
     "stop_after_found": true,
     "enabled": true
   }

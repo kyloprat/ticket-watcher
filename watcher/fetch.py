@@ -90,8 +90,7 @@ class Fetcher:
             try:
                 from playwright.sync_api import sync_playwright
                 self._pw = sync_playwright().start()
-                self._browser = self._pw.chromium.launch(
-                    headless=True, args=["--disable-blink-features=AutomationControlled"])
+                self._browser = self._pw.chromium.launch(headless=True)
                 self._ctx = self._browser.new_context(
                     user_agent=UA, locale="en-IN", timezone_id=self.tz,
                     viewport={"width": 1366, "height": 900})
@@ -132,7 +131,7 @@ class Fetcher:
         return page
 
     def _blocked_reason(self, page: Page) -> str | None:
-        if page.status in (401, 403, 429) or page.status >= 500:
+        if page.status in (401, 403, 404, 410, 429) or page.status >= 500:
             return f"HTTP {page.status}"
         head = page.text[:3000].lower()
         for m in self.block_markers:

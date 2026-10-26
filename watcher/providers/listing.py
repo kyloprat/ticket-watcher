@@ -9,7 +9,9 @@
 """
 from __future__ import annotations
 
-from ..matching import contains_phrase, href_slug_text, matches_name, normalize
+import re
+
+from ..matching import contains_phrase, href_slug_text, matches_name, matches_pattern, normalize
 from .base import Provider, Result, Status
 
 
@@ -28,6 +30,13 @@ class ListingProvider(Provider):
         self.cfg = cfg
         self.aliases = {normalize(k).replace(" ", "-"): v for k, v in (city_aliases or {}).items()}
 
+    def _rewrite(self, href: str, slug: str) -> str:
+        """Apply the site's optional link_rewrite [regex, replacement] (replacement may use {city})."""
+        rule = self.cfg.get("link_rewrite")
+        if not rule:
+            return href
+        return re.sub(rule[0], rule[1].replace("{city}", slug), href)
+
     def _find_candidates(self, movie: str, slug: str, fetcher) -> tuple[list[str], list[str], int]:
         must = [m.format(city=slug) for m in self.cfg.get("link_must_contain", [])]
         found, errors, loaded = [], [], 0
@@ -41,6 +50,7 @@ class ListingProvider(Provider):
                 if must and not all(m in href for m in must):
                     continue
                 if matches_name(movie, text) or matches_name(movie, href_slug_text(href)):
+                    href = self._rewrite(href, slug)
                     if href not in found:
                         found.append(href)
         # Prefer URLs that mention the city (e.g. /bengaluru/movies/... or ...-in-bengaluru-...)
@@ -49,7 +59,8 @@ class ListingProvider(Provider):
 
     def classify(self, page) -> tuple[Status, str]:
         hay = page.actions or [page.text]
-        opened = contains_phrase(hay, self.cfg.get("open_phrases", []))
+        opened = contains_phrase(hay, self.cfg.get("open_phrases", [])) or \
+            matches_pattern(hay, self.cfg.get("open_patterns", []))
         closed = contains_phrase(hay, self.cfg.get("closed_phrases", []))
         if opened and not closed:
             return Status.OPEN, f"page shows '{opened}'"

@@ -12,10 +12,12 @@ settings:
   error_alert_after: 6
   # Daily "still watching" summary at this local hour (0-23). null = off.
   heartbeat_hour: 10
-  # Real headless browser (Playwright) is far more reliable on JS-heavy
-  # ticketing sites. auto = use it if installed, else plain HTTP.
-  use_browser: auto        # auto | always | never
-  page_wait_seconds: 4     # extra time for JS to render each page
+  # Plain HTTP works for BookMyShow and District (checked live 2026-10-26).
+  # BookMyShow's bot protection blocks the headless browser even from a home
+  # connection, so the browser stays off. Use auto/always only for a site that
+  # needs JavaScript (and `pip install playwright` + `playwright install chromium`).
+  use_browser: never       # auto | always | never
+  page_wait_seconds: 4     # extra time for JS to render each page (browser only)
 
 # Common names → the slug ticket sites use in URLs.
 city_aliases:
@@ -37,6 +39,7 @@ block_markers:
   - "attention required"
   - "request blocked"
   - "unusual traffic"
+  - "you have been blocked"     # Cloudflare block page (seen on BookMyShow)
 
 providers:
   bookmyshow:
@@ -48,24 +51,33 @@ providers:
       - "https://in.bookmyshow.com/explore/movies-{city}"
       - "https://in.bookmyshow.com/explore/upcoming-movies-{city}"
     link_must_contain: ["/movies/"]
+    # Plain-HTTP listings link to /movies/<slug>/ET…, which has no city and never
+    # shows "Book tickets"; check the city page /movies/{city}/<slug>/ET… instead.
+    link_rewrite: ['/movies/([a-z0-9-]+)/(ET\d+)/?$', '/movies/{city}/\1/\2']
     city_slugs:            # site-specific overrides
       delhi: national-capital-region-ncr
       ncr: national-capital-region-ncr
       noida: national-capital-region-ncr
-    # Button/link texts on the movie page
+    # Button/link texts on the movie page (/movies/{city}/<slug>/ET…).
+    # Live 2026-10-26: a bookable film shows "Book tickets"; Doomsday shows "I'm interested".
     open_phrases: ["book tickets", "book now"]
     closed_phrases: ["i'm interested", "im interested", "coming soon", "releasing on"]
 
   district:
     name: District
     enabled: true
+    # District's movie pages are per city: …/<slug>-movie-tickets-in-{city}-MV…
     listing_urls:
-      - "https://www.district.in/movies/"
-      - "https://www.district.in/movies/upcoming"
-    link_must_contain: ["/movies/"]
+      - "https://www.district.in/movies/{city}-movie-tickets"
+      - "https://www.district.in/movies/upcoming-movies-in-{city}"
+    link_must_contain: ["/movies/", "-in-{city}-"]
     city_slugs: {}
-    open_phrases: ["book tickets", "book now", "select seats"]
-    closed_phrases: ["coming soon", "notify me", "releasing on", "i'm interested"]
+    # A bookable District movie page lists showtimes ("10:35 PM", "11:05 AM IMAX")
+    # instead of a "Book tickets" button; its FAQ/footer says "book tickets" on
+    # every movie page, so only button labels count.
+    open_phrases: []
+    open_patterns: ['\b\d{1,2}:\d{2}\s?[AP]M\b']
+    closed_phrases: ["coming soon", "notify me"]
 
   pvr:
     name: PVR INOX
